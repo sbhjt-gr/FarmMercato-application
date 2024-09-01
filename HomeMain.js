@@ -2,42 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, TouchableOpacity, View, StatusBar } from 'react-native';
 import { Button, Image, Text} from '@rneui/themed';
 import Icon from 'react-native-vector-icons/AntDesign';
-
-const TypingEffect = ({ text, speed }) => {
-  const [displayedText, setDisplayedText] = useState('');
-  const [isCursorVisible, setCursorVisible] = useState(true);
-
-  useEffect(() => {
-    let index = 0;
-    const typingInterval = setInterval(() => {
-      setDisplayedText((prev) => prev + text[index]);
-      index += 1;
-      if (index >= text.length) {
-        clearInterval(typingInterval);
-        setCursorVisible(false);
-      }
-    }, speed);
-
-    
-    const cursorInterval = setInterval(() => {
-      if (index < text.length) {
-        setCursorVisible((prev) => !prev);
-      }
-    }, 500);
-
-    return () => {
-      clearInterval(typingInterval);
-      clearInterval(cursorInterval);
-    };
-  }, [text, speed]);
-
-  return (
-    <View style={styles.typingContainer}>
-      <Text style={styles.descContent}>{displayedText}</Text>
-      {isCursorVisible && <Text style={styles.cursor}>|</Text>}
-    </View>
-  );
-};
+import TypingEffect from "./TypingEffect";
 
 export default function HomeMain({ navigation, route }) {
   return (
@@ -60,10 +25,12 @@ export default function HomeMain({ navigation, route }) {
           <TypingEffect 
             text="Sell your agricultural products directly to consumer!" 
             speed={50}
+            type='nor'
           />
           <TypingEffect 
             text="As a consumer, directly buy from farmers and save the money going to the middleman!" 
             speed={50}
+            type='nor'
           />
         </View>
         <View style={styles.content}>
@@ -73,9 +40,9 @@ export default function HomeMain({ navigation, route }) {
             buttonStyle={styles.button}
             rippleColor='#473178'
             icon={() => <Icon name="adduser" size={18} color="#fff" />}
-            onPress={() => { navigation.navigate('Registration') }}
+            onPress={() => { navigation.navigate('RegName', {type: 'farmer'}) }}
           >
-            Register as a Farmer!
+            Register as a Farmer
           </Button>
           <Button 
             size="lg"
@@ -83,14 +50,14 @@ export default function HomeMain({ navigation, route }) {
             buttonStyle={styles.button}
             rippleColor='#473178'
             icon={() => <Icon name="adduser" size={18} color="#fff" />}
-            onPress={() => { navigation.navigate('Registration') }}
+            onPress={() => { navigation.navigate('RegName', {type: 'consumer'}) }}
           >
-            Register as a Buyer!
+            Register as a Buyer
           </Button>
         </View>
         <View style={styles.alreadyUser}>
           <Text style={{ color: 'white' }}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => { navigation.navigate('Login') }}>
+          <TouchableOpacity onPress={() => { navigation.navigate('Login'), {type: 'f'} }}>
             <Text style={{ fontWeight: 'bold', color: 'white' }}>
               Log In
             </Text>
@@ -124,7 +91,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   welcomeText: {
-    marginTop: 20,
+    marginTop: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -137,21 +104,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 15,
-  },
-  descContent: {
-    color: 'white',
-    textAlign: 'center',
-    fontSize: 15,
-    padding: 5,
-  },
-  typingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cursor: {
-    color: 'white',
-    fontSize: 20,
-    marginLeft: 2,
+    marginBottom: 40
   },
   buttonContainer: {
     width: '80%',
@@ -168,8 +121,8 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   image: {
-    width: 250,
-    height: 250,
+    width: 300,
+    height: 300,
     resizeMode: 'contain',
   },
 });
