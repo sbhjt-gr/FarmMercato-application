@@ -56,7 +56,7 @@ export default function RegName({ navigation, route }) {
             if (!name || error) {
               alert('Please enter a valid name.');
             } else {
-              navigation.navigate('RegLocation', { name: name, type: route.params.type });
+              navigation.navigate('RegEmailID', { name: name, type: route.params.type });
             }
           }} 
           raised 

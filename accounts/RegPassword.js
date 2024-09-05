@@ -64,10 +64,12 @@ export default function RegPassword({ navigation, route }) {
         const db = getFirestore();
         await setDoc(doc(db, "users", user.uid), {
           displayName: route.params.name,
-          userType: route.params.type,
-          state: route.params.state, 
-          district: route.params.district, 
-          subDivision: route.params.division, // Store userType here
+          state: route.params.selectedState, 
+          fullAddress: route.params.fullAddress, 
+          landmark: route.params.landmark, 
+          pinCode: route.params.pinCode,
+          emailid: route.params.emailid, 
+          type: route.params.type
         });
 
         setIsLoading(false);

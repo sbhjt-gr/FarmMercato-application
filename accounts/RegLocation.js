@@ -1,62 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { KeyboardAvoidingView, StyleSheet, View, Alert } from 'react-native';
-import { Button, Text } from '@rneui/themed';
-import ModalDropdown from 'react-native-modal-dropdown';
-// import data from '../statedata.json';
+import { Button, Text, Input } from '@rneui/themed';
+import { Picker } from '@react-native-picker/picker';
+import TypingEffect from '../TypingEffect'; // Assuming TypingText is a custom component for typing effect
 
 export default function RegLocation({ navigation, route }) {
-  const [states, setStates] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [subDivisions, setSubDivisions] = useState([]);
   const [selectedState, setSelectedState] = useState(null);
-  const [selectedDistrict, setSelectedDistrict] = useState(null);
-  const [selectedSubDivision, setSelectedSubDivision] = useState(null);
+  const [fullAddress, setFullAddress] = useState('');
+  const [landmark, setLandmark] = useState('');
+  const [pinCode, setPinCode] = useState('');
 
-  useEffect(() => {
-    // Flatten the data array to access the state information
-    const flattenedData = data.flat();
-    
-    // Extract unique states
-    const stateList = [...new Set(flattenedData.map(item => item["STATE NAME"]))];
-    setStates(stateList);
-  }, []);
-
-  const handleStateSelect = (index, value) => {
-    setSelectedState(value);
-    setSelectedDistrict(null);
-    setSelectedSubDivision(null);
-
-    // Filter districts based on the selected state
-    const flattenedData = data.flat();
-    const filteredDistricts = flattenedData
-      .filter(item => item["STATE NAME"] === value)
-      .map(item => item["DISTRICT NAME"]);
-    const uniqueDistricts = [...new Set(filteredDistricts)];
-    setDistricts(uniqueDistricts);
-  };
-
-  const handleDistrictSelect = (index, value) => {
-    setSelectedDistrict(value);
-    setSelectedSubDivision(null);
-
-    // Filter sub-divisions based on the selected district
-    const flattenedData = data.flat();
-    const filteredSubDivisions = flattenedData
-      .filter(item => item["DISTRICT NAME"] === value)
-      .map(item => item["SUB-DISTRICT NAME"]);
-    const uniqueSubDivisions = [...new Set(filteredSubDivisions)];
-    setSubDivisions(uniqueSubDivisions);
-  };
+  const states = [
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", 
+    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", 
+    "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", 
+    "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", 
+    "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", 
+    "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", 
+    "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Lakshadweep", 
+    "Delhi", "Puducherry", "Ladakh", "Jammu and Kashmir"
+  ];
 
   const handleNextPress = () => {
-    if (!selectedState || !selectedDistrict || !selectedSubDivision) {
-      Alert.alert('Error', 'Please select state, district, and sub-division');
+    if (!selectedState || !fullAddress || !landmark || !pinCode) {
+      Alert.alert('Error', 'Please fill in all the fields.');
     } else {
       navigation.navigate('RegPassword', { 
         state: selectedState, 
-        district: selectedDistrict, 
-        subDivision: selectedSubDivision,
-
+        fullAddress: fullAddress, 
+        landmark: landmark, 
+        pinCode: pinCode,
+        emailid: route.params.emailid, 
+        name: route.params.name, 
+        type: route.params.type
       });
     }
   };
@@ -64,32 +40,41 @@ export default function RegLocation({ navigation, route }) {
   return (
     <KeyboardAvoidingView behavior='padding'>
       <View style={styles.container}>
-        <Text h3>Choose Your Location</Text>
-        <ModalDropdown 
-          options={states.length > 0 ? states : ['No states available']} 
-          defaultValue="Select State" 
-          onSelect={handleStateSelect} 
-          style={styles.dropdown} 
-          textStyle={styles.dropdownText} 
-          dropdownStyle={styles.dropdownMenu} 
+          <TypingEffect 
+            text="Enter your address" 
+            speed={50}
+            type='h3'
+          />
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={selectedState}
+            onValueChange={(itemValue) => setSelectedState(itemValue)}
+            style={styles.picker}
+          >
+            <Picker.Item label="Select State" value={null} />
+            {states.map((state, index) => (
+              <Picker.Item key={index} label={state} value={state} />
+            ))}
+          </Picker>
+        </View>
+        <Input
+          placeholder="Enter Full Address"
+          value={fullAddress}
+          onChangeText={setFullAddress}
+          style={styles.input}
         />
-        <ModalDropdown 
-          options={districts.length > 0 ? districts : ['No districts available']} 
-          defaultValue="Select District" 
-          onSelect={handleDistrictSelect} 
-          style={styles.dropdown} 
-          textStyle={styles.dropdownText} 
-          dropdownStyle={styles.dropdownMenu} 
-          disabled={districts.length === 0} 
+        <Input
+          placeholder="Enter Landmark"
+          value={landmark}
+          onChangeText={setLandmark}
+          style={styles.input}
         />
-        <ModalDropdown 
-          options={subDivisions.length > 0 ? subDivisions : ['No sub-divisions available']} 
-          defaultValue="Select Sub-Division" 
-          onSelect={(index, value) => setSelectedSubDivision(value)} 
-          style={styles.dropdown} 
-          textStyle={styles.dropdownText} 
-          dropdownStyle={styles.dropdownMenu} 
-          disabled={subDivisions.length === 0} 
+        <Input
+          placeholder="Enter Pin Code"
+          value={pinCode}
+          onChangeText={setPinCode}
+          keyboardType="numeric"
+          style={styles.input}
         />
         <Button 
           onPress={handleNextPress} 
@@ -110,17 +95,22 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
   },
-  dropdown: {
+  typingText: {
+    fontSize: 24,
+    marginBottom: 20,
+  },
+  pickerContainer: {
     width: 370,
     marginBottom: 15,
-    backgroundColor: '#fff',
+    backgroundColor: '#473178',
+    borderRadius: 5,
   },
-  dropdownText: {
-    fontSize: 16,
-    color: '#000',
+  picker: {
+    color: '#fff',
   },
-  dropdownMenu: {
-    backgroundColor: '#fff',
+  input: {
+    width: 370,
+    marginBottom: 15,
   },
   buttonContainer: {
     width: '90%',

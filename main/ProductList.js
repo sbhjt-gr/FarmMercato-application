@@ -1,44 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import { View, FlatList, Image, StyleSheet } from 'react-native';
-import { Text } from '@rneui/themed';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
+// Farmer.js
+import React, { useState } from 'react';
+import { View, Dimensions, StyleSheet } from 'react-native';
+import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import UploadProduce from './UploadProduce';
+import ProduceListed from './ProduceListed';
+import Settings from './Settings';
+import Others from './Others';
 
-const ProductList = () => {
-  const [uploadedImages, setUploadedImages] = useState([]);
+const Farmer = ({ navigation }) => {
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
+    { key: 'uploadProduce', title: 'Upload Produce' },
+    { key: 'produceListed', title: 'My Produce' },
+    { key: 'settings', title: 'Settings' },
+    { key: 'others', title: 'Others' },
+  ]);
 
-  const fetchUploadedImages = async () => {
-    try {
-      const db = getFirestore();
-      const querySnapshot = await getDocs(collection(db, 'products'));
-      const products = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setUploadedImages(products);
-    } catch (error) {
-      console.error("Error fetching images and info: ", error);
-    }
-  };
+  const renderScene = SceneMap({
+    uploadProduce: UploadProduce,
+    produceListed: ProduceListed,
+    settings: Settings,
+    others: Others,
+  });
 
-  useEffect(() => {
-    fetchUploadedImages();
-  }, []);
-
-  const renderImageItem = ({ item }) => (
-    <View style={styles.productContainer}>
-      <Image source={{ uri: item.imageUrl }} style={styles.uploadedImage} />
-      <Text>Name: {item.productName}</Text>
-      <Text>Type: {item.productType}</Text>
-      <Text>Quantity: {item.quantityAvailable}</Text>
-      <Text>Harvesting Date: {item.harvestingDate}</Text>
-      <Text>Price: {item.price}</Text>
-    </View>
+  const renderTabBar = (props) => (
+    <TabBar
+      {...props}
+      style={styles.tabBar}
+      indicatorStyle={styles.indicator}
+      renderIcon={({ route }) => {
+        const icons = {
+          uploadProduce: 'cloud-upload',
+          produceListed: 'list-alt',
+          settings: 'settings',
+          others: 'more-horiz',
+        };
+        return <Icon name={icons[route.key]} size={24} color="#E64E1F" />;
+      }}
+      labelStyle={styles.tabLabel}
+    />
   );
 
   return (
     <View style={styles.container}>
-      <Text h4 style={styles.uploadedImagesHeader}>Uploaded Products</Text>
-      <FlatList
-        data={uploadedImages}
-        renderItem={renderImageItem}
-        keyExtractor={(item) => item.id}
+      <TabView
+        navigationState={{ index, routes }}
+        renderScene={renderScene}
+        onIndexChange={setIndex}
+        initialLayout={{ width: Dimensions.get('window').width }}
+        renderTabBar={renderTabBar}
       />
     </View>
   );
@@ -47,19 +58,17 @@ const ProductList = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
   },
-  uploadedImagesHeader: {
-    marginBottom: 10,
+  tabBar: {
+    backgroundColor: '#473178',
   },
-  uploadedImage: {
-    width: 100,
-    height: 100,
-    marginBottom: 5,
+  tabLabel: {
+    fontSize: 12,
+    textAlign: 'center',
   },
-  productContainer: {
-    marginBottom: 15,
+  indicator: {
+    backgroundColor: '#E64E1F',
   },
 });
 
-export default ProductList;
+export default Farmer;

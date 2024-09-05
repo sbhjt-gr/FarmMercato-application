@@ -1,39 +1,57 @@
-import React from 'react';
-import { View, Text } from 'react-native';
-import { TabView, SceneMap } from 'react-native-tab-view';
+// ProduceListed.js
+import React, { useEffect, useState } from 'react';
+import { View, FlatList, Image, StyleSheet } from 'react-native';
+import { Text } from '@rneui/themed';
+import * as Progress from 'react-native-progress';
+import { fetchUploadedImages } from './uploadUtils';
+import Heading from './Heading';
 
-const FirstRoute = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>First Route</Text>
-  </View>
-);
+const ProduceListed = ({ refreshList }) => {
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-const SecondRoute = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Second Route</Text>
-  </View>
-);
-
-const produceListed = () => {
-  const [index, setIndex] = React.useState(0);
-  const [routes] = React.useState([
-    { key: 'first', title: 'First' },
-    { key: 'second', title: 'Second' },
-  ]);
-
-  const renderScene = SceneMap({
-    first: FirstRoute,
-    second: SecondRoute,
-  });
+  useEffect(() => {
+    fetchUploadedImages(setUploadedImages, setIsLoading);
+  }, [refreshList]);
 
   return (
-    <TabView
-      navigationState={{ index, routes }}
-      renderScene={renderScene}
-      onIndexChange={setIndex}
-      initialLayout={{ width: 300 }}
-    />
+    <View style={styles.tabContent}>
+      <Heading />
+      {isLoading ? (
+        <Progress.Circle size={50} indeterminate={true} color="#E64E1F" />
+      ) : (
+        <FlatList
+          data={uploadedImages}
+          renderItem={({ item }) => (
+            <View style={styles.productContainer}>
+              <Image source={{ uri: item.imageUrl }} style={styles.uploadedImage} />
+              <Text>Name: {item.productName}</Text>
+              <Text>Type: {item.productType}</Text>
+              <Text>Quantity Available: {item.quantityAvailable}</Text>
+              <Text>Price: ₹{item.price}/KG</Text>
+            </View>
+          )}
+          keyExtractor={(item) => item.id}
+        />
+      )}
+    </View>
   );
 };
 
-export default produceListed;
+const styles = StyleSheet.create({
+  tabContent: {
+    flex: 1,
+    padding: 16,
+  },
+  productContainer: {
+    marginBottom: 20,
+  },
+  uploadedImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+});
+
+export default ProduceListed;

@@ -95,7 +95,7 @@ const UploadProduce = () => {
           await addDoc(collection(db, 'products'), {
             productName,
             productType,
-            quantityAvailable: `${quantityAvailable}KG`,
+            quantityAvailable: `${quantityAvailable} KG`,
             harvestingDate: harvestingDate.toISOString().split('T')[0],
             price,
             imageUrl: downloadURL,
@@ -164,7 +164,7 @@ const UploadProduce = () => {
         </Picker>
         <Input
           style={styles.input}
-          placeholder="Quantity Available (kg)"
+          placeholder="Quantity Available (in KGs)"
           value={quantityAvailable}
           keyboardType="numeric"
           containerStyle={styles.inputContainer}
@@ -373,7 +373,8 @@ const ProduceListed = ({ refreshList }) => {
               )}
               <Text>Name: {item.productName}</Text>
               <Text>Type: {item.productType}</Text>
-              <Text>Quantity Available: {item.quantityAvailable}</Text>
+              <Text>Quantity: {item.quantityAvailable}</Text>
+              <Text>Harvesting Date: {item.harvestingDate}</Text>
               <Text>Price: ₹{item.price}/KG</Text>
             </View>
           )}
@@ -409,6 +410,11 @@ const Settings = () => {
         color="#E64E1F" 
         containerStyle={styles.buttonContainer} 
       />
+      <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Name" onPress={() => Alert.alert('Change Name')} />
+      <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Password" onPress={() => Alert.alert('Change Password')} />
+      <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Address" onPress={() => Alert.alert('Change Address')} />
+      <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Email" onPress={() => Alert.alert('Change Email')} />
+      <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Phone Number" onPress={() => Alert.alert('Change Phone Number')} />
     </View>
   );
 };

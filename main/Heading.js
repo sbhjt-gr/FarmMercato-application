@@ -1,3 +1,4 @@
+// Heading.js
 import React from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import { Text } from '@rneui/themed';
