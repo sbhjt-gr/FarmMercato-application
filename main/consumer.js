@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, StyleSheet, Dimensions, FlatList, Text } from 'react-native';
+import { View, Image, StyleSheet, Dimensions, FlatList, Text, Alert } from 'react-native';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Button, Input } from '@rneui/themed';
@@ -117,12 +117,14 @@ const Search = ({ setPincode }) => {
 const ProduceListed = ({ pincode, refreshList }) => {
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchPincode, setSearchPincode] = useState('');
 
   useEffect(() => {
     console.log('Pincode in ProduceListed:', pincode);
 
     const fetchUploadedImages = async () => {
-      if (!pincode) {
+      const searchPin = searchPincode || pincode;
+      if (!searchPin) {
         console.error('Pincode is not set.');
         return;
       }
@@ -132,7 +134,7 @@ const ProduceListed = ({ pincode, refreshList }) => {
         const db = getFirestore();
         const q = query(
           collection(db, 'products'),
-          where('pincode', '==', pincode),
+          where('pincode', '==', searchPin),
           orderBy('uploadDate', 'desc')
         );
 
@@ -152,11 +154,17 @@ const ProduceListed = ({ pincode, refreshList }) => {
     };
 
     fetchUploadedImages();
-  }, [refreshList, pincode]); // Refetch when refreshList or pincode changes
+  }, [refreshList, pincode, searchPincode]); // Refetch when refreshList, pincode, or searchPincode changes
 
   return (
     <View style={styles.tabContent}>
       <Heading />
+      <Input
+        placeholder="Search by Pincode"
+        value={searchPincode}
+        onChangeText={(text) => setSearchPincode(text)}
+        onSubmitEditing={() => setRefreshList(!refreshList)}
+      />
       {isLoading ? (
         <View style={styles.loaderContainer}>
           <Progress.Circle size={50} indeterminate={true} color="#E64E1F" />
@@ -184,7 +192,6 @@ const ProduceListed = ({ pincode, refreshList }) => {
     </View>
   );
 };
-
 // Settings Tab
 const Settings = () => {
   const navigation = useNavigation(); // Get navigation prop using hook

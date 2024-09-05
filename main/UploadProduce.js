@@ -1,28 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { View, Modal, Image, StyleSheet, Dimensions, Alert, FlatList, ScrollView } from 'react-native';
-import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import React, { useState } from 'react';
+import { View, Modal, Image, ScrollView, Alert, StyleSheet, Dimensions } from 'react-native';
 import { Button, Input, Text } from '@rneui/themed';
 import * as ImagePicker from 'expo-image-picker';
 import * as Progress from 'react-native-progress';
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { getFirestore, collection, addDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { auth } from '../firebase';
-import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
+import Heading from './Heading';
 
 const { width } = Dimensions.get('window');
 
-// Heading Component
-const Heading = () => (
-  <View style={styles.headingContainer}>
-    <Image source={require('../assets/images/icon.png')} style={styles.icon} />
-    <Text style={styles.headingText}>FarmMarceto</Text>
-  </View>
-);
-
-// Upload Produce Tab
 const UploadProduce = () => {
   const [productName, setProductName] = useState('');
   const [productType, setProductType] = useState('Vegetables');
@@ -79,11 +68,7 @@ const UploadProduce = () => {
 
       uploadTask.on(
         'state_changed',
-        (snapshot) => {
-          // You can track the progress of the upload here if needed
-          // const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          // console.log('Upload is ' + progress + '% done');
-        },
+        (snapshot) => {},
         (error) => {
           console.error("Error uploading image and info: ", error);
           Alert.alert("Error", `Failed to upload image and info. ${error.message}`);
@@ -95,7 +80,7 @@ const UploadProduce = () => {
           await addDoc(collection(db, 'products'), {
             productName,
             productType,
-            quantityAvailable: `${quantityAvailable}KG`,
+            quantityAvailable: `${quantityAvailable} kg`,
             harvestingDate: harvestingDate.toISOString().split('T')[0],
             price,
             imageUrl: downloadURL,
@@ -276,7 +261,6 @@ const UploadProduce = () => {
           style={styles.picker}
           onValueChange={(itemValue) => setEnergySource(itemValue)}
         >
-          
           <Picker.Item label="Energy Source" value="#" />
           <Picker.Item label="Renewable" value="Renewable" />
           <Picker.Item label="Non-renewable" value="Non-renewable" />
@@ -311,179 +295,12 @@ const UploadProduce = () => {
   );
 };
 
-// Produce Listed Tab
-const ProduceListed = ({ refreshList }) => {
-  const [uploadedImages, setUploadedImages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchUploadedImages = async () => {
-      const user = auth.currentUser;
-
-      if (!user) {
-        console.error("No user is signed in.");
-        return;
-      }
-
-      const uid = user.uid;
-
-      setIsLoading(true);
-      try {
-        const db = getFirestore();
-        const q = query(
-          collection(db, 'products'),
-          where('userId', '==', uid), // Filter by the current user's uid
-          orderBy('uploadDate', 'desc')
-        );
-
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-          console.log('No products found for the given uid.');
-        } else {
-          const products = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-          console.log('Fetched products:', products);
-          setUploadedImages(products);
-        }
-      } catch (error) {
-        console.error("Error fetching images and info: ", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUploadedImages();
-  }, [refreshList]); // Refetch when refreshList changes
-
-  return (
-    <View style={styles.tabContent}>
-      <Heading />
-      {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <Progress.Circle size={50} indeterminate={true} color="#E64E1F" />
-        </View>
-      ) : (
-        <FlatList
-          data={uploadedImages}
-          renderItem={({ item }) => (
-            <View style={styles.productContainer}>
-              {item.imageUrl ? (
-                <Image source={{ uri: item.imageUrl }} style={styles.uploadedImage} />
-              ) : (
-                <Text>No image available</Text>
-              )}
-              <Text>Name: {item.productName}</Text>
-              <Text>Type: {item.productType}</Text>
-              <Text>Quantity Available: {item.quantityAvailable}</Text>
-              <Text>Price: ₹{item.price}/KG</Text>
-            </View>
-          )}
-          keyExtractor={(item) => item.id}
-        />
-      )}
-    </View>
-  );
-};
-
-// Settings Tab
-const Settings = () => {
-  const navigation = useNavigation(); // Get navigation prop using hook
-
-  const handleLogout = () => {
-    auth.signOut()
-      .then(() => {
-        Alert.alert("Logged out", "You have been logged out successfully.");
-        navigation.navigate('HomeMain'); // Adjust this based on your navigation setup
-      })
-      .catch((error) => {
-        console.error("Error signing out: ", error);
-        Alert.alert("Error", "Failed to log out.");
-      });
-  };
-
-  return (
-    <View style={styles.tabContent}>
-      <Heading />
-      <Button 
-        title="Logout" 
-        onPress={handleLogout} 
-        color="#E64E1F" 
-        containerStyle={styles.buttonContainer} 
-      />
-    </View>
-  );
-};
-
-// Others Tab
-const Others = ({ navigation }) => {
-  return (
-    <View style={styles.tabContent}>
-      <Heading />
-      <Text>Others Tab</Text>
-    </View>
-  );
-};
-
-// Main Component
-const Farmer = ({ navigation }) => {
-  const [index, setIndex] = useState(0);
-  const [routes] = useState([
-    { key: 'uploadProduce', title: 'Upload Produce X' },
-    { key: 'produceListed', title: 'My Produce X' },
-    { key: 'settings', title: 'Profile Settings X' },
-    { key: 'others', title: 'Other Options X' },
-  ]);
-
-  const [refreshList, setRefreshList] = useState(false); // State to trigger refresh
-
-  const renderScene = SceneMap({
-    uploadProduce: () => <UploadProduce onUploadSuccess={() => setRefreshList(prev => !prev)} />, // Pass callback to refresh list
-    produceListed: () => <ProduceListed refreshList={refreshList} />, // Pass refresh state to ProduceListed
-    settings: Settings,
-    others: Others,
-  });
-
-  const renderTabBar = props => (
-    <View style={styles.tabBarContainer}>
-      <TabBar
-        {...props}
-        style={styles.tabBar}
-        indicatorStyle={styles.indicator}
-        renderIcon={({ route }) => {
-          const iconNames = {
-            uploadProduce: 'cloud-upload',
-            produceListed: 'list-alt',
-            settings: 'settings',
-            others: 'more-horiz',
-          };
-          return <Icon name={iconNames[route.key]} size={24} color="#E64E1F" />;
-        }}
-        labelStyle={styles.tabLabel}
-      />
-    </View>
-  );
-
-  return (
-    <View style={styles.container}>
-      <TabView
-        navigationState={{ index, routes }}
-        renderScene={renderScene}
-        onIndexChange={setIndex}
-        initialLayout={{ width: Dimensions.get('window').width }}
-        renderTabBar={renderTabBar}
-      />
-    </View>
-  );
-};
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   scrollViewContent: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 50
+    paddingBottom: 50,
   },
   tabContent: {
     flex: 1,
@@ -502,21 +319,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#473178",
   },
-  headingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  icon: {
-    width: 30,
-    height: 30,
-    marginRight: 10,
-  },
-  headingText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#424242'
-  },
   button: {
     backgroundColor: "#E64E1F",
   },
@@ -530,33 +332,6 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 8,
     marginBottom: 10,
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  productContainer: {
-    flex: 1,
-    marginBottom: 20,
-  },
-  uploadedImage: {
-    width: width - 32,
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  tabBar: {
-    backgroundColor: '#473178', // Background color for the tab bar
-    borderTopWidth: 1,
-    borderTopColor: '#E64E1F',
-  },
-  tabLabel: {
-    fontSize: 12, // Smaller font size for tab bar text
-    textAlign: 'center', // Center align text
-  },
-  indicator: {
-    backgroundColor: '#E64E1F',
   },
   bottomElement: {
     top: 50,
@@ -576,4 +351,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Farmer;
+export default UploadProduce;
