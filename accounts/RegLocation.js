@@ -32,7 +32,8 @@ export default function RegLocation({ navigation, route }) {
         pinCode: pinCode,
         emailid: route.params.emailid, 
         name: route.params.name, 
-        type: route.params.type
+        type: route.params.type,
+        number: route.params.number
       });
     }
   };
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     width: 370,
-    marginBottom: 15,
+    marginBottom: 25,
     backgroundColor: '#473178',
     borderRadius: 5,
   },

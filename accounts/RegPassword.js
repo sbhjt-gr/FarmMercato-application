@@ -64,25 +64,18 @@ export default function RegPassword({ navigation, route }) {
         const db = getFirestore();
         await setDoc(doc(db, "users", user.uid), {
           displayName: route.params.name,
-          state: route.params.selectedState, 
+          state: route.params.state, 
           fullAddress: route.params.fullAddress, 
           landmark: route.params.landmark, 
-          pinCode: route.params.pinCode,
+          pincode: route.params.pinCode,
           emailid: route.params.emailid, 
-          type: route.params.type
+          userType: route.params.type,
+          number: route.params.number
         });
 
         setIsLoading(false);
-        
-        // Redirect based on userType
-        if (route.params.type === 'farmer') {
-          navigation.replace('farmerPage'); // Redirect to farmerPage
-        } else if (route.params.type === 'consumer') {
-          navigation.replace('consumerPage'); // Redirect to consumerPage
-        } else {
-          alert('Invalid user type');
-          // Optionally handle unexpected user types here
-        }
+      
+        navigation.replace('UserType');
       } catch (error) {
         alert(error.message);
         setIsLoading(false);
@@ -105,6 +98,7 @@ export default function RegPassword({ navigation, route }) {
             speed={50}
             type='h3'
           />
+          {/* <Text>{route.params.number}</Text> */}
         <Input
           placeholder="Set Password"
           containerStyle={{ width: 370 }}

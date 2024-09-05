@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, StyleSheet, Dimensions, FlatList, Text, Alert } from 'react-native';
+import { View, Image, StyleSheet, Dimensions, FlatList, Text, Alert, Linking } from 'react-native';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Button, Input } from '@rneui/themed';
 import * as Progress from 'react-native-progress';
-import { getFirestore, collection, doc, getDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { documentId, getFirestore, collection, doc, getDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { auth } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import { Card } from 'react-native-elements';
@@ -79,7 +79,9 @@ const Search = ({ setPincode }) => {
       setIsLoading(false);
     }
   };
-
+  const handleCall = (number) => {
+    Linking.openURL(`tel:${number}`);
+  };
   return (
     <View style={styles.tabContent}>
       <Heading />
@@ -99,11 +101,17 @@ const Search = ({ setPincode }) => {
             data={farmers}
             renderItem={({ item }) => (
               <Card containerStyle={styles.cardContainer}>
-                <Card.Title>{item.displayName}</Card.Title>
+                <Text style={styles.addressText}>{item.displayName}</Text>
                 <Card.Divider />
                 <Text style={styles.addressText}>
-                  {item.street}, {item.landmark}, {item.subDivision}, {item.district}, {item.state}, {item.pincode}
+                  {item.fullAddress}, {item.landmark}, {item.state} - {item.pincode}
                 </Text>
+                <Text style={styles.addressText}>Phone Number: {item.number}</Text>
+                <Button
+                  title="Call"
+                  onPress={() => handleCall(item.number)}
+                  buttonStyle={styles.callButton}
+                />
               </Card>
             )}
             keyExtractor={(item) => item.id}
@@ -114,56 +122,104 @@ const Search = ({ setPincode }) => {
   );
 };
 
-const ProduceListed = ({ pincode, refreshList }) => {
-  const [uploadedImages, setUploadedImages] = useState([]);
+const ProduceListed = () => {
+  const [produce, setProduce] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchPincode, setSearchPincode] = useState('');
+  const [userPincode, setUserPincode] = useState('');
 
   useEffect(() => {
-    console.log('Pincode in ProduceListed:', pincode);
+    fetchUserPincode();
+  }, []);
 
-    const fetchUploadedImages = async () => {
-      const searchPin = searchPincode || pincode;
-      if (!searchPin) {
-        console.error('Pincode is not set.');
-        return;
+  useEffect(() => {
+    if (userPincode) {
+      fetchAllProduce(userPincode);
+    }
+  }, [userPincode]);
+
+  const fetchUserPincode = async () => {
+    const user = auth.currentUser;
+
+    if (!user) {
+      console.error("No user is signed in.");
+      return;
+    }
+
+    const uid = user.uid;
+    const db = getFirestore();
+    const userDoc = doc(db, 'users', uid);
+
+    try {
+      const docSnapshot = await getDoc(userDoc);
+      console.log('Document snapshot exists:', docSnapshot.exists());
+
+      if (docSnapshot.exists()) {
+        const userData = docSnapshot.data();
+        console.log('User data:', userData);
+        const pincode = userData.pincode;
+        console.log('Pincode:', pincode);
+        setUserPincode(pincode); // Set the pincode in the parent component
+      } else {
+        console.error('No user data found for this UID.');
       }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
 
-      setIsLoading(true);
-      try {
-        const db = getFirestore();
-        const q = query(
+  const fetchAllProduce = async (pincode) => {
+    setIsLoading(true);
+    try {
+      const db = getFirestore();
+      const farmersQuery = query(
+        collection(db, 'users'),
+        where('userType', '==', 'farmer'),
+        where('pincode', '==', pincode)
+      );
+
+      const farmersSnapshot = await getDocs(farmersQuery);
+      const farmersList = farmersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      console.log('Fetched farmers:', farmersList); // Debug statement
+
+      let allProduce = [];
+      for (const farmer of farmersList) {
+        console.log('Fetching produce for farmer:', farmer.id); // Debug statement
+        const produceQuery = query(
           collection(db, 'products'),
-          where('pincode', '==', searchPin),
-          orderBy('uploadDate', 'desc')
+          where('userId', '==', farmer.id),
+          orderBy('uploadDate', 'desc') // This requires a composite index
         );
 
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-          console.log('No products found for the given pincode.');
-        } else {
-          const products = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-          console.log('Fetched products:', products);
-          setUploadedImages(products);
-        }
-      } catch (error) {
-        console.error("Error fetching images and info: ", error);
-      } finally {
-        setIsLoading(false);
+        const produceSnapshot = await getDocs(produceQuery);
+        const produceList = produceSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log('Fetched produce for farmer:', farmer.id, produceList); // Debug statement
+        allProduce = [...allProduce, ...produceList];
       }
-    };
 
-    fetchUploadedImages();
-  }, [refreshList, pincode, searchPincode]); // Refetch when refreshList, pincode, or searchPincode changes
+      console.log('All fetched produce:', allProduce); // Debug statement
+      setProduce(allProduce);
+    } catch (error) {
+      console.error('Error fetching produce:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSearch = () => {
+    fetchAllProduce(searchPincode);
+  };
 
   return (
     <View style={styles.tabContent}>
-      <Heading />
+      <Heading title="Listed Produce" />
       <Input
-        placeholder="Search by Pincode"
+        style={styles.searchBar}
+        placeholder="Enter Pin Code"
         value={searchPincode}
-        onChangeText={(text) => setSearchPincode(text)}
-        onSubmitEditing={() => setRefreshList(!refreshList)}
+        onChangeText={setSearchPincode}
+        onSubmitEditing={handleSearch}
       />
       {isLoading ? (
         <View style={styles.loaderContainer}>
@@ -171,7 +227,7 @@ const ProduceListed = ({ pincode, refreshList }) => {
         </View>
       ) : (
         <FlatList
-          data={uploadedImages}
+          data={produce}
           renderItem={({ item }) => (
             <View style={styles.productContainer}>
               {item.imageUrl ? (
@@ -180,10 +236,8 @@ const ProduceListed = ({ pincode, refreshList }) => {
                 <Text>No image available</Text>
               )}
               <Text>Name: {item.productName}</Text>
-              <Text>Type: {item.productType}</Text>
-              <Text>Quantity: {item.quantityAvailable}</Text>
-              <Text>Harvesting Date: {item.harvestingDate}</Text>
-              <Text>Price: {item.price}</Text>
+              <Text>Quantity Available: {item.quantityAvailable}</Text>
+              <Text>Price: ₹{item.price}/KG</Text>
             </View>
           )}
           keyExtractor={(item) => item.id}
@@ -192,6 +246,7 @@ const ProduceListed = ({ pincode, refreshList }) => {
     </View>
   );
 };
+
 // Settings Tab
 const Settings = () => {
   const navigation = useNavigation(); // Get navigation prop using hook
@@ -207,61 +262,21 @@ const Settings = () => {
         Alert.alert("Error", "Failed to log out.");
       });
   };
-  
-  const handlePasswordChange = (text) => {
-    setPassword(text);
-    setStrength(evaluatePasswordStrength(text));
-    setHasStartedTyping(text.length > 0);
-  };
-  
-  const signUp = async () => {
-    if (password.length < 8) {
-      alert("Password must be at least 8 characters long.");
-      return;
-    }
-  
-    if (password) {
-      try {
-        setIsLoading(true);
-        const { user } = await createUserWithEmailAndPassword(auth, route.params.emailid, password);
-        await updateProfile(user, {
-          displayName: route.params.name,
-        });
-  
-        // Prepare data for Firestore
-        const userData = {
-          displayName: route.params.name || '', // Use a fallback if undefined
-          pincode: route.params.pincode || '',
-          userType: route.params.type || '',
-          state: route.params.state || 'Unknown State', 
-          district: route.params.district || 'Unknown District',
-          subDivision: route.params.subDivision || 'Unknown Sub-Division',
-          street: route.params.street || 'Unknown Street',
-          landmark: route.params.landmark || 'Unknown Landmark',
-        };
-  
-        // Save user data to Firestore
-        const db = getFirestore();
-        await setDoc(doc(db, 'users', user.uid), userData);
-  
-        alert("User registered successfully!");
-      } catch (error) {
-        console.error("Error during sign up:", error);
-        alert("Error during sign up: " + error.message);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
 
   return (
     <View style={styles.tabContent}>
       <Heading />
       <Button 
-          title="Logout" 
-          onPress={handleLogout} 
-          color="#E64E1F" 
-          containerStyle={styles.buttonContainer} />
+        title="Logout" 
+        onPress={handleLogout} 
+        color="#E64E1F" 
+        containerStyle={styles.buttonContainer} 
+      />
+      <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Name" onPress={() => Alert.alert('Change Name')} />
+      <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Password" onPress={() => Alert.alert('Change Password')} />
+      <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Address" onPress={() => Alert.alert('Change Address')} />
+      <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Email" onPress={() => Alert.alert('Change Email')} />
+      <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Phone Number" onPress={() => Alert.alert('Change Phone Number')} />
     </View>
   );
 };
@@ -373,6 +388,11 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: "#E64E1F",
   },
+  callButton: {
+    marginTop: 10,
+    backgroundColor: '#E64E1F',
+    
+  },
   buttonContainer: {
     width: 350,
     marginBottom: 10,
@@ -428,10 +448,11 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     marginBottom: 20,
+    backgroundColor: '#473178',
   },
   addressText: {
     fontSize: 14,
-    color: '#424242',
+    color: '#fff',
   },
 });
 

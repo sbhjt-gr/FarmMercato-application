@@ -18,7 +18,7 @@ const { width } = Dimensions.get('window');
 const Heading = () => (
   <View style={styles.headingContainer}>
     <Image source={require('../assets/images/icon.png')} style={styles.icon} />
-    <Text style={styles.headingText}>FarmMarceto</Text>
+    <Text style={styles.headingText}>FarmMarceto Farmer</Text>
   </View>
 );
 
@@ -90,8 +90,8 @@ const UploadProduce = () => {
         },
         async () => {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-
           const db = getFirestore();
+          
           await addDoc(collection(db, 'products'), {
             productName,
             productType,
@@ -108,7 +108,7 @@ const UploadProduce = () => {
             pesticideFrequency,
             pesticideType,
             farmEquipment,
-            energySource,
+            energySource
           });
 
           Alert.alert("Success", "Product uploaded successfully");

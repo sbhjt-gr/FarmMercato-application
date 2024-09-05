@@ -27,7 +27,7 @@ export default function RegEmail({ navigation, route }) {
     } else if (!validateEmail(emailid)) {
       alert('Your email ID is not valid.');
     } else {
-      navigation.navigate('RegLocation', { emailid: emailid, name: route.params.name, type: route.params.type });
+      navigation.navigate('RegNumber', { emailid: emailid, name: route.params.name, type: route.params.type });
     }
   };
 

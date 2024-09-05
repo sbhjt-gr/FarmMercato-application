@@ -10,6 +10,7 @@ import RegEmailID from './accounts/RegEmailID';
 import RegLocation from './accounts/RegLocation';
 import UserType from './accounts/UserType';
 import RegPassword from './accounts/RegPassword';
+import RegNumber from './accounts/RegNumber';
 import LoginScreen from './accounts/LoginScreen';
 import { auth } from './firebase'; // Import the configured auth
 import farmerPage from './main/farmer'; // Import the AppTabs component
@@ -71,21 +72,25 @@ export default function App() {
               headerStyle: { backgroundColor: '#573B91' },
               headerTintColor: '#fff',
             }}>
-                <Stack.Screen
-                  name="farmerPage"
-                  component={farmerPage}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="consumerPage"
-                  component={consumerPage}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="UserType"
-                  component={UserType}
-                  options={{ headerShown: false }}
-                />
+                  <Stack.Screen
+                    name="farmerPage"
+                    component={farmerPage}
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="consumerPage"
+                    component={consumerPage}
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="UserType"
+                    component={UserType}
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="RegNumber"
+                    component={RegNumber}
+                  />
                   <Stack.Screen
                     name="HomeMain"
                     component={HomeMain}
