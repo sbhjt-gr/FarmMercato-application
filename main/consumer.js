@@ -101,7 +101,13 @@ const Search = ({ setPincode }) => {
             data={farmers}
             renderItem={({ item }) => (
               <Card containerStyle={styles.cardContainer}>
-                <Text style={styles.addressText}>{item.displayName}</Text>
+                <View style={styles.farmerInfo}>
+                  <Image
+                    source={require('../image/farmer.png')}
+                    style={styles.farmerImage}
+                  />
+                  <Text style={styles.addressText}>{item.displayName}</Text>
+                </View>
                 <Card.Divider />
                 <Text style={styles.addressText}>
                   {item.fullAddress}, {item.landmark}, {item.state} - {item.pincode}
@@ -121,6 +127,7 @@ const Search = ({ setPincode }) => {
     </View>
   );
 };
+
 
 const ProduceListed = () => {
   const [produce, setProduce] = useState([]);
@@ -281,24 +288,13 @@ const Settings = () => {
   );
 };
 
-// Others Tab
-const Others = () => {
-  return (
-    <View style={styles.tabContent}>
-      <Heading />
-      <Text>Others Tab</Text>
-    </View>
-  );
-};
-
-// Main Component
 const Consumer = () => {
   const [index, setIndex] = useState(0);
   const [routes] = useState([
     { key: 'searchFarmer', title: 'Find Farmers X' },
     { key: 'produceListed', title: 'Nearby Listed X' },
-    { key: 'settings', title: 'Profile Settings X' },
-    { key: 'others', title: 'Other Options X' },
+    { key: 'settings', title: 'Profile Settings X' }
+
   ]);
 
   const [refreshList, setRefreshList] = useState(false);
@@ -311,8 +307,7 @@ const Consumer = () => {
   const renderScene = SceneMap({
     searchFarmer: () => <Search setPincode={setPincode} />,
     produceListed: () => pincode ? <ProduceListed pincode={pincode} refreshList={refreshList} /> : <Text>Loading pincode...</Text>,
-    settings: Settings,
-    others: Others,
+    settings: Settings
   });
 
   const renderTabBar = props => (
@@ -325,8 +320,7 @@ const Consumer = () => {
           const iconNames = {
             searchFarmer: 'search',
             produceListed: 'list-alt',
-            settings: 'settings',
-            others: 'more-horiz',
+            settings: 'settings'
           };
           return <Icon name={iconNames[route.key]} size={24} color="#E64E1F" />;
         }}
@@ -453,6 +447,17 @@ const styles = StyleSheet.create({
   addressText: {
     fontSize: 14,
     color: '#fff',
+  },
+  farmerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  farmerImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+    marginBottom: 10
   },
 });
 

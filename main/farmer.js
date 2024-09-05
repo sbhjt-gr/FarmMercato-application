@@ -419,24 +419,14 @@ const Settings = () => {
   );
 };
 
-// Others Tab
-const Others = ({ navigation }) => {
-  return (
-    <View style={styles.tabContent}>
-      <Heading />
-      <Text>Others Tab</Text>
-    </View>
-  );
-};
 
 // Main Component
 const Farmer = ({ navigation }) => {
   const [index, setIndex] = useState(0);
   const [routes] = useState([
     { key: 'uploadProduce', title: 'Upload Produce X' },
-    { key: 'produceListed', title: 'My Produce X' },
+    { key: 'produceListed', title: 'My Produce List X' },
     { key: 'settings', title: 'Profile Settings X' },
-    { key: 'others', title: 'Other Options X' },
   ]);
 
   const [refreshList, setRefreshList] = useState(false); // State to trigger refresh
@@ -445,7 +435,6 @@ const Farmer = ({ navigation }) => {
     uploadProduce: () => <UploadProduce onUploadSuccess={() => setRefreshList(prev => !prev)} />, // Pass callback to refresh list
     produceListed: () => <ProduceListed refreshList={refreshList} />, // Pass refresh state to ProduceListed
     settings: Settings,
-    others: Others,
   });
 
   const renderTabBar = props => (
@@ -459,7 +448,6 @@ const Farmer = ({ navigation }) => {
             uploadProduce: 'cloud-upload',
             produceListed: 'list-alt',
             settings: 'settings',
-            others: 'more-horiz',
           };
           return <Icon name={iconNames[route.key]} size={24} color="#E64E1F" />;
         }}
@@ -495,6 +483,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     width: '100%',
+    marginBottom: 100,
   },
   imageClickPhotoPickerContainer: {
     width: '90%',
@@ -551,6 +540,12 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 8,
     marginBottom: 10,
+  },
+  tabBarContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   tabBar: {
     backgroundColor: '#473178', // Background color for the tab bar
