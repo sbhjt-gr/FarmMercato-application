@@ -72,6 +72,11 @@ export default function App() {
               headerStyle: { backgroundColor: '#573B91' },
               headerTintColor: '#fff',
             }}>
+                <Stack.Screen
+                    name="UserType"
+                    component={UserType}
+                    options={{ headerShown: false }}
+                  />
                   <Stack.Screen
                     name="farmerPage"
                     component={farmerPage}
@@ -82,11 +87,7 @@ export default function App() {
                     component={consumerPage}
                     options={{ headerShown: false }}
                   />
-                  <Stack.Screen
-                    name="UserType"
-                    component={UserType}
-                    options={{ headerShown: false }}
-                  />
+                  
                   <Stack.Screen
                     name="RegNumber"
                     component={RegNumber}

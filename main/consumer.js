@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, StyleSheet, Dimensions, FlatList, Text, Alert, Linking } from 'react-native';
+import { View, Image, StyleSheet, Dimensions, FlatList, Text, Alert, Linking, Modal } from 'react-native';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { Button, Input } from '@rneui/themed';
+import { Button, Input, CheckBox } from '@rneui/themed';
 import * as Progress from 'react-native-progress';
 import { documentId, getFirestore, collection, doc, getDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { auth } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import { Card } from 'react-native-elements';
+import TypingEffect from "../TypingEffect";
+import { Picker } from '@react-native-picker/picker';
 
 const { width } = Dimensions.get('window');
 
@@ -100,31 +102,187 @@ const Search = ({ setPincode }) => {
           <FlatList
             data={farmers}
             renderItem={({ item }) => (
-              <Card containerStyle={styles.cardContainer}>
-                <View style={styles.farmerInfo}>
-                  <Image
-                    source={require('../image/farmer.png')}
-                    style={styles.farmerImage}
-                  />
-                  <Text style={styles.addressText}>{item.displayName}</Text>
-                </View>
-                <Card.Divider />
-                <Text style={styles.addressText}>
-                  {item.fullAddress}, {item.landmark}, {item.state} - {item.pincode}
-                </Text>
-                <Text style={styles.addressText}>Phone Number: {item.number}</Text>
-                <Button
-                  title="Call"
-                  onPress={() => handleCall(item.number)}
-                  buttonStyle={styles.callButton}
-                />
-              </Card>
-            )}
-            keyExtractor={(item) => item.id}
-          />
+    <Card containerStyle={styles.cardContainer}>
+      <View style={styles.farmerInfo}>
+        <Image
+          source={require('../image/farmer.png')}
+          style={styles.farmerImage}
+        />
+        <Text style={styles.addressText}>{item.displayName}</Text>
+      </View>
+      <Card.Divider />
+      <Text style={styles.addressText}>
+        {item.fullAddress}, {item.landmark}, {item.state} - {item.pincode}
+      </Text>
+      <Text style={styles.addressText}>Phone Number: {item.number}</Text>
+
+      <Button
+        title="Call"
+        onPress={() => handleCall(item.number)}
+        buttonStyle={styles.callButton}
+      />
+
+      {/* Add Products Button */}
+      <Button
+        title="Products"
+        onPress={() => Alert.alert('Will be implemented soon!')}
+        buttonStyle={styles.callButton} // You can add a custom style for the button
+      />
+    </Card>
+  )}
+  keyExtractor={(item) => item.id}
+/>
+
         </>
       )}
     </View>
+  );
+};
+
+const calculateSustainabilityScore = (parameters) => {
+  // Define weights for each parameter
+  const weights = {
+    farmingMethod: 0.15,
+    irrigationMethod: 0.15,
+    fertilizerUse: 0.15,
+    pesticideUse: 0.15,
+    pesticideFrequency: 0.10,
+    pesticideType: 0.10,
+    farmEquipment: 0.10,
+    energySource: 0.10
+  };
+
+  // Define scores for each parameter
+  const scores = {
+    farmingMethod: {
+      Organic: 1,
+      Conventional: 0.5,
+      Regenerative: 1,
+      Hydroponic: 0.75
+    },
+    irrigationMethod: {
+      'Drip Irrigation': 1,
+      'Flood Irrigation': 0.5,
+      'Rain-fed': 0.75
+    },
+    fertilizerUse: {
+      Organic: 1,
+      Synthetic: 0.5,
+      None: 1
+    },
+    pesticideUse: {
+      None: 1,
+      Organic: 0.75,
+      Synthetic: 0.5
+    },
+    pesticideFrequency: {
+      None: 1,
+      Monthly: 0.75,
+      Weekly: 0.5
+    },
+    pesticideType: {
+      NA: 1,
+      Low: 0.75,
+      Medium: 0.5,
+      High: 0.25
+    },
+    farmEquipment: {
+      Manual: 1,
+      Electric: 0.75,
+      Diesel: 0.5,
+      Biodiesel: 0.75
+    },
+    energySource: {
+      Renewable: 1,
+      'Non-renewable': 0.5
+    }
+  };
+
+  // Calculate total score
+  let totalScore = 0;
+  let maxScore = 0;
+
+  for (const [param, weight] of Object.entries(weights)) {
+    const value = parameters[param];
+    const paramScore = scores[param][value] || 0;  // Safeguard if value not found
+    totalScore += paramScore * weight;
+    maxScore += weight; // Sum of weights for normalization
+  }
+
+  // Calculate percentage score
+  const percentageScore = (totalScore / maxScore) * 100;
+
+  // Return score as string formatted with percentage symbol
+  return `${percentageScore.toFixed(2)}%`; // Ensure string format
+};
+
+const PaymentModal = ({
+  modalVisible,
+  setModalVisible,
+  orderAddress,
+  setOrderAddress,
+  city,
+  setCity,
+  state,
+  setState,
+  pincode,
+  setPincode,
+  handleOrderSubmit,
+}) => {
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={modalVisible}
+      onRequestClose={() => {
+        setModalVisible(false);
+      }}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <TypingEffect text="Enter your address" speed={50} type="h3" />
+
+          <Input
+            style={styles.input}
+            placeholder="Street Address"
+            value={orderAddress}
+            onChangeText={setOrderAddress}
+          />
+
+          <Input
+            style={styles.input}
+            placeholder="City"
+            value={city}
+            onChangeText={setCity}
+          />
+
+          <Input
+            style={styles.input}
+            placeholder="State"
+            value={state}
+            onChangeText={setState}
+          />
+
+          <Input
+            style={styles.input}
+            placeholder="Pincode"
+            value={pincode}
+            onChangeText={setPincode}
+          />
+
+          <Button
+            title="Proceed to Payment"
+            onPress={handleOrderSubmit} // Handles order submission
+            buttonStyle={styles.callButton}
+          />
+          <Button
+            title="Cancel"
+            onPress={() => setModalVisible(false)}
+            buttonStyle={styles.callButton}
+          />
+        </View>
+      </View>
+    </Modal>
   );
 };
 
@@ -134,6 +292,12 @@ const ProduceListed = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchPincode, setSearchPincode] = useState('');
   const [userPincode, setUserPincode] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [orderAddress, setOrderAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [selectedProduce, setSelectedProduce] = useState(null);
 
   useEffect(() => {
     fetchUserPincode();
@@ -218,9 +382,28 @@ const ProduceListed = () => {
     fetchAllProduce(searchPincode);
   };
 
+  const handleOrder = (item) => {
+    setSelectedProduce(item);
+    setModalVisible(true);
+  };
+
+  const handleOrderSubmit = () => {
+    // Handle order submission logic here
+    console.log('Order submitted for:', selectedProduce, 'to address:', orderAddress);
+    setModalVisible(false);
+    setOrderAddress('');
+  };
+
   return (
     <View style={styles.tabContent}>
-      <Heading title="Listed Produce" />
+      <Heading />
+      <Picker
+        style={{ marginBottom: 15 }}
+        // onValueChange={handleValueChange}
+      >
+        <Picker.Item label="Sort by Distance" value="distance" />
+        <Picker.Item label="Sort by Price" value="price" />
+      </Picker>
       <Input
         style={styles.searchBar}
         placeholder="Enter Pin Code"
@@ -235,21 +418,58 @@ const ProduceListed = () => {
       ) : (
         <FlatList
           data={produce}
-          renderItem={({ item }) => (
-            <View style={styles.productContainer}>
-              {item.imageUrl ? (
-                <Image source={{ uri: item.imageUrl }} style={styles.uploadedImage} />
-              ) : (
-                <Text>No image available</Text>
-              )}
-              <Text>Name: {item.productName}</Text>
-              <Text>Quantity Available: {item.quantityAvailable}</Text>
-              <Text>Price: ₹{item.price}/KG</Text>
-            </View>
-          )}
+          renderItem={({ item }) => {
+            // Calculate sustainability score
+            let sustainabilityScore = calculateSustainabilityScore({
+              farmingMethod: item.farmingMethod,
+              irrigationMethod: item.irrigationMethod,
+              fertilizerUse: item.fertilizerUse,
+              pesticideUse: item.pesticideUse,
+              pesticideFrequency: item.pesticideFrequency,
+              pesticideType: item.pesticideType,
+              farmEquipment: item.farmEquipment,
+              energySource: item.energySource
+            });
+
+            return (
+              <Card containerStyle={styles.cardContainer}>
+                <View style={styles.productContainer}>
+                  {item.imageUrl ? (
+                    <Image source={{ uri: item.imageUrl }} style={styles.uploadedImage} />
+                    
+                  ) : (
+                    <Text>No image available</Text>
+                  )}
+                  <Text style={styles.productText}>Name: {item.productName}</Text>
+                  <Text style={styles.productText}>Quantity Available: {item.quantityAvailable}</Text>
+                  <Text style={styles.productText}>Price: ₹{item.price}/KG</Text>
+                  <Text style={styles.productText}>Farmer Name: {item.displayName}</Text>
+                  <Text style={styles.productTextSus}>{`Sustainability Score: ${sustainabilityScore}`}</Text>
+                  <Button
+                    title="Order from Farmer"
+                    onPress={() => handleOrder(item)}
+                    buttonStyle={styles.callButton}
+                  />
+                </View>
+              </Card>
+            );
+          }}
           keyExtractor={(item) => item.id}
         />
       )}
+      <PaymentModal 
+        modalVisible={modalVisible} 
+        setModalVisible={setModalVisible} 
+        orderAddress={orderAddress}
+        setOrderAddress={setOrderAddress}
+        city={city}
+        setCity={setCity}
+        state={state}
+        setState={setState}
+        pincode={pincode}
+        setPincode={setPincode}
+        handleOrderSubmit={handleOrderSubmit}
+      />
     </View>
   );
 };
@@ -284,6 +504,7 @@ const Settings = () => {
       <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Address" onPress={() => Alert.alert('Change Address')} />
       <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Email" onPress={() => Alert.alert('Change Email')} />
       <Button color="#E64E1F"  containerStyle={styles.buttonContainer}  title="Change Phone Number" onPress={() => Alert.alert('Change Phone Number')} />
+        
     </View>
   );
 };
@@ -291,8 +512,8 @@ const Settings = () => {
 const Consumer = () => {
   const [index, setIndex] = useState(0);
   const [routes] = useState([
-    { key: 'searchFarmer', title: 'Find Farmers X' },
-    { key: 'produceListed', title: 'Nearby Listed X' },
+    { key: 'searchFarmer', title: 'Find Farmers UXYZ' },
+    { key: 'produceListed', title: 'Nearby Listed XYZ' },
     { key: 'settings', title: 'Profile Settings X' }
 
   ]);
@@ -385,7 +606,6 @@ const styles = StyleSheet.create({
   callButton: {
     marginTop: 10,
     backgroundColor: '#E64E1F',
-    
   },
   buttonContainer: {
     width: 350,
@@ -395,6 +615,7 @@ const styles = StyleSheet.create({
   tabContent: {
     flex: 1,
     padding: 16,
+    marginBottom: 70,
   },
   selectedImage: {
     width: width - 32,
@@ -412,7 +633,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   uploadedImage: {
-    width: width - 32,
+    width: width - 100,
     height: 200,
     borderRadius: 8,
     marginBottom: 10,
@@ -435,7 +656,7 @@ const styles = StyleSheet.create({
   },
   modal: {
     flex: 1,
-    backgroundColor: '#eee',
+    backgroundColor: '#473178',
     opacity: 0.8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -459,6 +680,38 @@ const styles = StyleSheet.create({
     marginRight: 10,
     marginBottom: 10
   },
+  productText: {
+    color: '#fff',
+  },
+  productTextSus: {
+    color: 'red',
+    fontWeight: 'bold',
+    fontSize: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Add transparency for the background
+  },
+  modalContent: {
+    width: '90%',
+    padding: 20,
+    backgroundColor: '#fff', // White background for modal content
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#fff',
+  },
+  input: {
+    width: '100%',
+    marginBottom: 15,
+  },
+
 });
 
 export default Consumer;

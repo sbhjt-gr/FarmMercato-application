@@ -15,6 +15,12 @@ const UserType = ({ navigation }) => {
       const db = getFirestore();
       const user = auth.currentUser;
 
+      if (!user) {
+        // If no user is logged in, navigate to HomeMain
+        navigation.replace('HomeMain');
+        return;
+      }
+
       try {
         // Fetch the user document from Firestore
         const userDocRef = doc(db, "users", user.uid);
@@ -26,35 +32,41 @@ const UserType = ({ navigation }) => {
           // Navigate based on userType
           if (userType === 'farmer') {
             navigation.replace('farmerPage');
-          } else {
+          } else if (userType === 'consumer') {
             navigation.replace('consumerPage');
+          } else {
+            navigation.replace('HomeMain');
           }
         } else {
           console.log("No such document found!");
+          navigation.replace('HomeMain');
         }
       } catch (error) {
         console.error("Error fetching user type:", error);
+        navigation.replace('HomeMain');
       } finally {
         setIsLoading(false); // Loader is finished once the type is fetched
       }
     };
 
     fetchUserType();
+
+    // Set a timeout to refresh after 3 seconds and check the condition again
+    const timeoutId = setTimeout(() => {
+      fetchUserType();
+    }, 3000);
+
+    // Cleanup the timeout if the component unmounts
+    return () => clearTimeout(timeoutId);
   }, [navigation]);
 
   return (
     <View style={styles.container}>
-      {/* {isLoading ? (
-        <> */}
-          <Progress.Circle 
-            size={50} 
-            indeterminate={true} 
-            color="#E64E1F" // Custom color for loader
-          />
-        {/* </>
-      ) : (
-        <Text style={styles.text}>Redirecting...</Text> // Fallback text in case of delay
-      )} */}
+      <Progress.Circle 
+        size={50} 
+        indeterminate={true} 
+        color="#E64E1F" // Custom color for loader
+      />
     </View>
   );
 };
