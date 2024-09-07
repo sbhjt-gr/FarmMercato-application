@@ -59,7 +59,7 @@ export default function RegLocation({ navigation, route }) {
           </Picker>
         </View>
         <Input
-          placeholder="Enter Full Address"
+          placeholder="Enter Street/Locality"
           value={fullAddress}
           onChangeText={setFullAddress}
           style={styles.input}
@@ -75,6 +75,7 @@ export default function RegLocation({ navigation, route }) {
           value={pinCode}
           onChangeText={setPinCode}
           keyboardType="numeric"
+          maxLength={6}
           style={styles.input}
         />
         <Button 

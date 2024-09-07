@@ -1,6 +1,6 @@
 // UploadProduce.js
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, Modal, Dimensions, Alert, Image } from 'react-native';
+import { View, ScrollView, StyleSheet, Modal, Dimensions, Alert, Image, TouchableOpacity } from 'react-native';
 import { Input, Button, Text } from '@rneui/themed';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -8,6 +8,7 @@ import * as Progress from 'react-native-progress';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { uploadImageAndInfo } from './uploadUtils'; // Import upload function
 import Heading from './Heading';
+// import { TouchableOpacity } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -71,6 +72,7 @@ const UploadProduce = () => {
           onChangeText={setPrice}
           keyboardType="numeric"
         />
+        
         <Button
           title={`Harvesting Date: ${harvestingDate.toISOString().split('T')[0]}`}
           onPress={() => setShowDatePicker(true)}

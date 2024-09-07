@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Modal, Image, StyleSheet, Dimensions, Alert, FlatList, ScrollView } from 'react-native';
+import { View, Modal, Image, StyleSheet, Dimensions, Alert, FlatList, ScrollView, TouchableOpacity } from 'react-native';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Button, Input, Text } from '@rneui/themed';
@@ -11,18 +11,17 @@ import { auth } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
+import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 
-// Heading Component
 const Heading = () => (
   <View style={styles.headingContainer}>
     <Image source={require('../assets/images/icon.png')} style={styles.icon} />
-    <Text style={styles.headingText}>FarmMarceto Farmer</Text>
+    <Text style={styles.headingText}>FarmMercato Farmer</Text>
   </View>
 );
 
-// Upload Produce Tab
 const UploadProduce = () => {
   const [productName, setProductName] = useState('');
   const [productType, setProductType] = useState('Vegetables');
@@ -64,6 +63,24 @@ const UploadProduce = () => {
     }
   };
 
+  const fetchAIRecommendedPrice = async () => {
+    try {
+      const payload = { data: [productName] };
+      console.log('Sending payload:', payload); // Log the payload for debugging
+  
+      const response = await axios.post('https://priceprediction-model.onrender.com/predict', payload);
+      console.log('Response data:', response.data); // Log the response data for debugging
+  
+      const aiRecommendedPrice = response.data.predicted_price;
+      const quantity = parseFloat(quantityAvailable) || 1; // Parse quantityAvailable or default to 1
+      const totalPrice = Math.round(aiRecommendedPrice * quantity); // Multiply and round off the total price
+      setPrice(totalPrice.toString()); // Set the total price to the Price input field
+    } catch (error) {
+      console.error('Error fetching AI recommended price:', error.response ? error.response.data : error.message);
+      Alert.alert('Error', 'Failed to fetch AI recommended price.');
+    }
+  };
+
   const uploadImageAndInfo = async () => {
     if (!selectedImage) return;
 
@@ -80,18 +97,17 @@ const UploadProduce = () => {
       uploadTask.on(
         'state_changed',
         (snapshot) => {
-          // You can track the progress of the upload here if needed
-          // const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          // console.log('Upload is ' + progress + '% done');
+          // Progress function
         },
         (error) => {
           console.error("Error uploading image and info: ", error);
           Alert.alert("Error", `Failed to upload image and info. ${error.message}`);
+          setIsLoading(false);
         },
         async () => {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           const db = getFirestore();
-          
+
           await addDoc(collection(db, 'products'), {
             productName,
             productType,
@@ -132,58 +148,67 @@ const UploadProduce = () => {
     } catch (error) {
       console.error("Error uploading image and info: ", error);
       Alert.alert("Error", `Failed to upload image and info. ${error.message}`);
+      setIsLoading(false);
     }
   };
 
   return (
     <ScrollView contentContainerStyle={styles.scrollViewContent}>
-      <View style={styles.tabContent}>
-        <Heading />
-        <View style={styles.bottomElement}>
-          <Modal visible={isLoading} transparent>
-            <View style={styles.modal}>
-              <Progress.Bar width={width * 0.6} indeterminate={true} color="#483178" />
-            </View>
-          </Modal>
-        </View>
-        <Input
-          style={styles.input}
-          containerStyle={styles.inputContainer}
-          placeholder="Product Name"
-          value={productName}
-          onChangeText={setProductName}
-        />
-        <Picker
-          selectedValue={productType}
-          style={styles.picker}
-          onValueChange={(itemValue) => setProductType(itemValue)}
-        >
-          <Picker.Item label="Category" value="#" />
-          <Picker.Item label="Vegetables" value="Vegetables" />
-          <Picker.Item label="Fruits" value="Fruits" />
-        </Picker>
-        <Input
-          style={styles.input}
-          placeholder="Quantity Available (in KGs)"
-          value={quantityAvailable}
-          keyboardType="numeric"
-          containerStyle={styles.inputContainer}
-          onChangeText={setQuantityAvailable}
-        />
-        <Input
-          style={styles.input}
-          containerStyle={styles.inputContainer}
-          placeholder="Price"
-          value={price}
-          keyboardType="numeric"
-          onChangeText={setPrice}
-        />
+    <View style={styles.tabContent}>
+      <Heading />
+      <View style={styles.bottomElement}>
+        <Modal visible={isLoading} transparent>
+          <View style={styles.modal}>
+            <Progress.Bar width={width * 0.6} indeterminate={true} color="#483178" />
+          </View>
+        </Modal>
+      </View>
+      <Input
+        style={styles.input}
+        containerStyle={styles.inputContainer}
+        placeholder="Product Name"
+        value={productName}
+        onChangeText={setProductName}
+      />
+      <Picker
+        selectedValue={productType}
+        style={styles.picker}
+        onValueChange={(itemValue) => setProductType(itemValue)}
+      >
+        <Picker.Item label="Category" value="#" />
+        <Picker.Item label="Vegetables" value="Vegetables" />
+        <Picker.Item label="Fruits" value="Fruits" />
+      </Picker>
+      <Input
+        style={styles.input}
+        placeholder="Quantity Available (in KGs)"
+        value={quantityAvailable}
+        keyboardType="numeric"
+        containerStyle={styles.inputContainer}
+        onChangeText={setQuantityAvailable}
+      />
+      <Input
+        style={styles.input}
+        containerStyle={styles.inputContainer}
+        placeholder="Price"
+        value={price}
+        keyboardType="numeric"
+        onChangeText={setPrice}
+      />
+      <View style={styles.AIButtonText}>
+        <Button type='clear' onPress={fetchAIRecommendedPrice}>
+          <Image
+            source={require('../image/ai-icon.png')}
+            style={styles.aiicon}
+          />
+          AI Recommended Price
+        </Button>
+      </View>
         <Button
-          title={`Harvesting Date: ${harvestingDate.toISOString().split('T')[0]}`}
+          title={`Select Harvesting Date: ${harvestingDate.toISOString().split('T')[0]}`}
           onPress={() => setShowDatePicker(true)}
           containerStyle={styles.buttonContainer}
           buttonStyle={styles.button}
-          color="#E64E1F"
         />
         {showDatePicker && (
           <DateTimePicker
@@ -276,7 +301,6 @@ const UploadProduce = () => {
           style={styles.picker}
           onValueChange={(itemValue) => setEnergySource(itemValue)}
         >
-          
           <Picker.Item label="Energy Source" value="#" />
           <Picker.Item label="Renewable" value="Renewable" />
           <Picker.Item label="Non-renewable" value="Non-renewable" />
@@ -310,6 +334,7 @@ const UploadProduce = () => {
     </ScrollView>
   );
 };
+
 
 // Produce Listed Tab
 const ProduceListed = ({ refreshList }) => {
@@ -505,7 +530,7 @@ const styles = StyleSheet.create({
   icon: {
     width: 30,
     height: 30,
-    marginRight: 10,
+    marginRight: 5
   },
   headingText: {
     fontSize: 20,
@@ -548,13 +573,13 @@ const styles = StyleSheet.create({
     right: 0,
   },
   tabBar: {
-    backgroundColor: '#473178', // Background color for the tab bar
+    backgroundColor: '#473178',
     borderTopWidth: 1,
     borderTopColor: '#E64E1F',
   },
   tabLabel: {
-    fontSize: 12, // Smaller font size for tab bar text
-    textAlign: 'center', // Center align text
+    fontSize: 12, 
+    textAlign: 'center',
   },
   indicator: {
     backgroundColor: '#E64E1F',
@@ -574,6 +599,16 @@ const styles = StyleSheet.create({
     height: 50,
     width: '100%',
     marginBottom: 20,
+  },
+  AIButtonText: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  aiicon: {
+    width: 20,
+    height: 20,
+    marginRight: 7,
   },
 });
 

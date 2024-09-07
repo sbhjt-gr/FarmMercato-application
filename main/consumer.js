@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, StyleSheet, Dimensions, FlatList, Text, Alert, Linking, Modal } from 'react-native';
+import { View, Image, StyleSheet, Dimensions, FlatList, Text, Alert, Linking, Modal, ScrollView } from 'react-native';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Button, Input, CheckBox } from '@rneui/themed';
 import * as Progress from 'react-native-progress';
-import { documentId, getFirestore, collection, doc, getDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, doc, getDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { auth } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import { Card } from 'react-native-elements';
@@ -20,124 +20,6 @@ const Heading = () => (
     <Text style={styles.headingText}>FarmMercato Consumer</Text>
   </View>
 );
-
-const Search = ({ setPincode }) => {
-  const [farmers, setFarmers] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchPincode, setSearchPincode] = useState('');
-
-  useEffect(() => {
-    fetchUserPincode();
-  }, []);
-
-  const fetchUserPincode = async () => {
-    const user = auth.currentUser;
-
-    if (!user) {
-      console.error("No user is signed in.");
-      return;
-    }
-
-    const uid = user.uid;
-    const db = getFirestore();
-    const userDoc = doc(db, 'users', uid);
-
-    try {
-      const docSnapshot = await getDoc(userDoc);
-      console.log('Document snapshot exists:', docSnapshot.exists());
-
-      if (docSnapshot.exists()) {
-        const userData = docSnapshot.data();
-        console.log('User data:', userData);
-        const pincode = userData.pincode;
-        console.log('Pincode:', pincode);
-        setPincode(pincode); // Set the pincode in the parent component
-        fetchFarmers(pincode); // Fetch farmers based on user pincode
-      } else {
-        console.error('No user data found for this UID.');
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-    }
-  };
-
-  const fetchFarmers = async (pincode) => {
-    setIsLoading(true);
-    try {
-      const db = getFirestore();
-      const farmersQuery = query(
-        collection(db, 'users'),
-        where('userType', '==', 'farmer'),
-        where('pincode', '==', pincode)
-      );
-
-      const querySnapshot = await getDocs(farmersQuery);
-      const farmersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      setFarmers(farmersList);
-    } catch (error) {
-      console.error('Error fetching farmers:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  const handleCall = (number) => {
-    Linking.openURL(`tel:${number}`);
-  };
-  return (
-    <View style={styles.tabContent}>
-      <Heading />
-      {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <Progress.Circle size={50} indeterminate={true} color="#E64E1F" />
-        </View>
-      ) : (
-        <>
-          <Input
-            placeholder="Search by Pincode"
-            value={searchPincode}
-            onChangeText={(text) => setSearchPincode(text)}
-            onSubmitEditing={() => fetchFarmers(searchPincode)}
-          />
-          <FlatList
-            data={farmers}
-            renderItem={({ item }) => (
-    <Card containerStyle={styles.cardContainer}>
-      <View style={styles.farmerInfo}>
-        <Image
-          source={require('../image/farmer.png')}
-          style={styles.farmerImage}
-        />
-        <Text style={styles.addressText}>{item.displayName}</Text>
-      </View>
-      <Card.Divider />
-      <Text style={styles.addressText}>
-        {item.fullAddress}, {item.landmark}, {item.state} - {item.pincode}
-      </Text>
-      <Text style={styles.addressText}>Phone Number: {item.number}</Text>
-
-      <Button
-        title="Call"
-        onPress={() => handleCall(item.number)}
-        buttonStyle={styles.callButton}
-      />
-
-      {/* Add Products Button */}
-      <Button
-        title="Products"
-        onPress={() => Alert.alert('Will be implemented soon!')}
-        buttonStyle={styles.callButton} // You can add a custom style for the button
-      />
-    </Card>
-  )}
-  keyExtractor={(item) => item.id}
-/>
-
-        </>
-      )}
-    </View>
-  );
-};
 
 const calculateSustainabilityScore = (parameters) => {
   // Define weights for each parameter
@@ -216,6 +98,210 @@ const calculateSustainabilityScore = (parameters) => {
   return `${percentageScore.toFixed(2)}%`; // Ensure string format
 };
 
+const Search = ({ setPincode }) => {
+  const [farmers, setFarmers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchPincode, setSearchPincode] = useState('');
+  const [products, setProducts] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    fetchUserPincode();
+  }, []);
+
+  const fetchUserPincode = async () => {
+    const user = auth.currentUser;
+
+    if (!user) {
+      console.error("No user is signed in.");
+      return;
+    }
+
+    const uid = user.uid;
+    const db = getFirestore();
+    const userDoc = doc(db, 'users', uid);
+
+    try {
+      const docSnapshot = await getDoc(userDoc);
+      console.log('Document snapshot exists:', docSnapshot.exists());
+
+      if (docSnapshot.exists()) {
+        const userData = docSnapshot.data();
+        console.log('User data:', userData);
+        const pincode = userData.pincode;
+        console.log('Pincode:', pincode);
+        setPincode(pincode); // Set the pincode in the parent component
+        fetchFarmers(pincode); // Fetch farmers based on user pincode
+      } else {
+        console.error('No user data found for this UID.');
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
+
+  const fetchFarmers = async (pincode) => {
+    setIsLoading(true);
+    try {
+      const db = getFirestore();
+      const farmersQuery = query(
+        collection(db, 'users'),
+        where('userType', '==', 'farmer'),
+        where('pincode', '==', pincode)
+      );
+
+      const querySnapshot = await getDocs(farmersQuery);
+      const farmersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      setFarmers(farmersList);
+    } catch (error) {
+      console.error('Error fetching farmers:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchProducts = async (farmerId) => {
+    setIsLoading(true);
+    try {
+      const db = getFirestore();
+      const productsQuery = query(
+        collection(db, 'products'),
+        where('userId', '==', farmerId)
+      );
+
+      const querySnapshot = await getDocs(productsQuery);
+      const productsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      setProducts(productsList);
+      setModalVisible(true);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCall = (number) => {
+    Linking.openURL(`tel:${number}`);
+  };
+
+  const handleOrder = (item) => {
+    // Handle order logic here
+    // Alert.alert('Order', `Order placed for ${item.productName}`);
+  };
+
+  const handleOffer = (item) => {
+    // Handle offer logic here
+    // Alert.alert('Offer', `Offer made for ${item.productName}`);
+  };
+
+  return (
+    <View style={styles.tabContent}>
+      <Heading />
+      {isLoading ? (
+        <View style={styles.loaderContainer}>
+          <Progress.Circle size={50} indeterminate={true} color="#E64E1F" />
+        </View>
+      ) : (
+        <>
+          <Input
+            placeholder="Search by Pincode"
+            value={searchPincode}
+            onChangeText={(text) => setSearchPincode(text)}
+            onSubmitEditing={() => fetchFarmers(searchPincode)}
+          />
+          <FlatList
+            data={farmers}
+            renderItem={({ item }) => (
+              <Card containerStyle={styles.cardContainer}>
+                <View style={styles.farmerInfo}>
+                  <Image
+                    source={require('../image/farmer.png')}
+                    style={styles.farmerImage}
+                  />
+                  <Text style={styles.addressText}>{item.displayName}</Text>
+                </View>
+                <Card.Divider />
+                <Text style={styles.addressText}>
+                  {item.fullAddress}, {item.landmark}, {item.state} - {item.pincode}
+                </Text>
+                <Text style={styles.addressText}>Phone Number: {item.number}</Text>
+
+                <Button
+                  title="Call"
+                  onPress={() => handleCall(item.number)}
+                  buttonStyle={styles.callButton}
+                />
+
+                {/* Add Products Button */}
+                <Button
+                  title="Products"
+                  onPress={() => fetchProducts(item.id)}
+                  buttonStyle={styles.callButton} // You can add a custom style for the button
+                />
+              </Card>
+            )}
+            keyExtractor={(item) => item.id}
+          />
+        </>
+      )}
+
+      {/* Modal to display products */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Products</Text>
+            <ScrollView>
+          {products.map((item) => (
+            <Card key={item.id} containerStyle={styles.cardContainer}>
+              <View style={styles.productContainer}>
+                {item.imageUrl ? (
+                  <Image source={{ uri: item.imageUrl }} style={styles.uploadedImage} />
+                ) : (
+                  <Text style={styles.productText}>No image available</Text>
+                )}
+                <Text style={styles.productText}>Name: {item.productName}</Text>
+                <Text style={styles.productText}>Quantity Available: {item.quantityAvailable}</Text>
+                <Text style={styles.productText}>Price: ₹{item.price}/KG</Text>
+                <Text style={styles.productText}>Farmer Name: {item.displayName}</Text>
+                <Text style={[styles.productText, {color: 'red', fontSize: 18}]}>{`Sustainability Score: ${item.sustainabilityScore}`}</Text>
+                <Button
+                  title="Order from Farmer"
+                  onPress={() => handleOrder(item)}
+                  buttonStyle={styles.callButton}
+                />
+                <Button
+                  title="Message the Farmer"
+                  onPress={() => Alert.alert('Will be implemented soon!')}
+                  buttonStyle={styles.callButton}
+                />
+                <Button
+                  title="Make Price Offer"
+                  onPress={() => handleOffer(item)}
+                  buttonStyle={styles.callButton}
+                />
+              </View>
+            </Card>
+          ))}
+        </ScrollView>
+            <Button
+              title="Close"
+              onPress={() => setModalVisible(false)}
+              buttonStyle={styles.callButton}
+            />
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
 const PaymentModal = ({
   modalVisible,
   setModalVisible,
@@ -286,6 +372,58 @@ const PaymentModal = ({
   );
 };
 
+const OfferModal = ({
+  modalVisibleTwo,
+  setModalVisibleTwo,
+  ppr,
+  setPPR,
+  quantity,
+  setQuantity,
+  handleOfferSubmit
+}) => {
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={modalVisibleTwo}
+      onRequestClose={() => {
+        setModalVisibleTwo(false);
+      }}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <TypingEffect text="Enter your offer" speed={50} type="h3" />
+
+          <Input
+            style={styles.input}
+            placeholder="Enter offer price / KG"
+            value={ppr}
+            onChangeText={setPPR}
+            keyboardType='numeric'
+          />
+
+          <Input 
+            style={styles.input}
+            placeholder="Enter the quantity (in KGs)"
+            value={quantity}
+            onChangeText={setQuantity}
+            keyboardType='numeric'
+          />
+          <Button
+            title="Make Offer"
+            // onPress={handleOfferSubmit} // Handles order submission
+            buttonStyle={styles.callButton}
+          />
+          <Button
+            title="Cancel"
+            onPress={() => setModalVisibleTwo(false)}
+            buttonStyle={styles.callButton}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+};
 
 const ProduceListed = () => {
   const [produce, setProduce] = useState([]);
@@ -293,6 +431,7 @@ const ProduceListed = () => {
   const [searchPincode, setSearchPincode] = useState('');
   const [userPincode, setUserPincode] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisibleTwo, setModalVisibleTwo] = useState(false);
   const [orderAddress, setOrderAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
@@ -386,6 +525,10 @@ const ProduceListed = () => {
     setSelectedProduce(item);
     setModalVisible(true);
   };
+  const handleOffer = (item) => {
+    setSelectedProduce(item);
+    setModalVisibleTwo(true);
+  };
 
   const handleOrderSubmit = () => {
     // Handle order submission logic here
@@ -393,7 +536,12 @@ const ProduceListed = () => {
     setModalVisible(false);
     setOrderAddress('');
   };
-
+  const handleOfferSubmit = () => {
+    // Handle order submission logic here
+    // console.log('Order submitted for:', selectedProduce, 'to address:', orderAddress);
+    setModalVisibleTwo(false);
+    // setOrderAddress('');
+  };
   return (
     <View style={styles.tabContent}>
       <Heading />
@@ -419,24 +567,11 @@ const ProduceListed = () => {
         <FlatList
           data={produce}
           renderItem={({ item }) => {
-            // Calculate sustainability score
-            let sustainabilityScore = calculateSustainabilityScore({
-              farmingMethod: item.farmingMethod,
-              irrigationMethod: item.irrigationMethod,
-              fertilizerUse: item.fertilizerUse,
-              pesticideUse: item.pesticideUse,
-              pesticideFrequency: item.pesticideFrequency,
-              pesticideType: item.pesticideType,
-              farmEquipment: item.farmEquipment,
-              energySource: item.energySource
-            });
-
             return (
               <Card containerStyle={styles.cardContainer}>
                 <View style={styles.productContainer}>
                   {item.imageUrl ? (
                     <Image source={{ uri: item.imageUrl }} style={styles.uploadedImage} />
-                    
                   ) : (
                     <Text>No image available</Text>
                   )}
@@ -444,10 +579,19 @@ const ProduceListed = () => {
                   <Text style={styles.productText}>Quantity Available: {item.quantityAvailable}</Text>
                   <Text style={styles.productText}>Price: ₹{item.price}/KG</Text>
                   <Text style={styles.productText}>Farmer Name: {item.displayName}</Text>
-                  <Text style={styles.productTextSus}>{`Sustainability Score: ${sustainabilityScore}`}</Text>
-                  <Button
+                   <Button
                     title="Order from Farmer"
                     onPress={() => handleOrder(item)}
+                    buttonStyle={styles.callButton}
+                  />
+                  <Button
+                    title="Message the Farmer"
+                    onPress={() => Alert.alert('Will be implemented soon!')}
+                    buttonStyle={styles.callButton}
+                  />
+                  <Button
+                    title="Make Price Offer"
+                    onPress={() => handleOffer()}
                     buttonStyle={styles.callButton}
                   />
                 </View>
@@ -469,6 +613,11 @@ const ProduceListed = () => {
         pincode={pincode}
         setPincode={setPincode}
         handleOrderSubmit={handleOrderSubmit}
+      />
+      <OfferModal
+        modalVisibleTwo={modalVisibleTwo}
+        setModalVisibleTwo={setModalVisibleTwo} 
+        handleOfferSubmit={handleOfferSubmit}
       />
     </View>
   );
@@ -633,7 +782,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   uploadedImage: {
-    width: width - 100,
+    width: '100%',
     height: 200,
     borderRadius: 8,
     marginBottom: 10,
@@ -664,6 +813,8 @@ const styles = StyleSheet.create({
   cardContainer: {
     marginBottom: 20,
     backgroundColor: '#473178',
+    borderRadius: 10,
+    padding: 10,
   },
   addressText: {
     fontSize: 14,
@@ -682,11 +833,14 @@ const styles = StyleSheet.create({
   },
   productText: {
     color: '#fff',
+    fontSize: 16,
+    marginBottom: 5,
   },
   productTextSus: {
-    color: 'red',
+    color: '#fff',
     fontWeight: 'bold',
-    fontSize: 20,
+    fontSize: 16,
+    marginBottom: 10,
   },
   modalOverlay: {
     flex: 1,
@@ -695,7 +849,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)', // Add transparency for the background
   },
   modalContent: {
-    width: '90%',
+    // width: '90%',
+    maxHeight: '80%', // Set a maximum height for the modal
     padding: 20,
     backgroundColor: '#fff', // White background for modal content
     borderRadius: 10,
@@ -705,13 +860,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#fff',
+    color: '#473178',
   },
-  input: {
-    width: '100%',
-    marginBottom: 15,
-  },
-
 });
 
 export default Consumer;
