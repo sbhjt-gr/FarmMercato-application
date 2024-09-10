@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Card } from 'react-native-elements';
 import TypingEffect from "../TypingEffect";
 import { Picker } from '@react-native-picker/picker';
+import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 
@@ -21,82 +22,7 @@ const Heading = () => (
   </View>
 );
 
-const calculateSustainabilityScore = (parameters) => {
-  // Define weights for each parameter
-  const weights = {
-    farmingMethod: 0.15,
-    irrigationMethod: 0.15,
-    fertilizerUse: 0.15,
-    pesticideUse: 0.15,
-    pesticideFrequency: 0.10,
-    pesticideType: 0.10,
-    farmEquipment: 0.10,
-    energySource: 0.10
-  };
 
-  // Define scores for each parameter
-  const scores = {
-    farmingMethod: {
-      Organic: 1,
-      Conventional: 0.5,
-      Regenerative: 1,
-      Hydroponic: 0.75
-    },
-    irrigationMethod: {
-      'Drip Irrigation': 1,
-      'Flood Irrigation': 0.5,
-      'Rain-fed': 0.75
-    },
-    fertilizerUse: {
-      Organic: 1,
-      Synthetic: 0.5,
-      None: 1
-    },
-    pesticideUse: {
-      None: 1,
-      Organic: 0.75,
-      Synthetic: 0.5
-    },
-    pesticideFrequency: {
-      None: 1,
-      Monthly: 0.75,
-      Weekly: 0.5
-    },
-    pesticideType: {
-      NA: 1,
-      Low: 0.75,
-      Medium: 0.5,
-      High: 0.25
-    },
-    farmEquipment: {
-      Manual: 1,
-      Electric: 0.75,
-      Diesel: 0.5,
-      Biodiesel: 0.75
-    },
-    energySource: {
-      Renewable: 1,
-      'Non-renewable': 0.5
-    }
-  };
-
-  // Calculate total score
-  let totalScore = 0;
-  let maxScore = 0;
-
-  for (const [param, weight] of Object.entries(weights)) {
-    const value = parameters[param];
-    const paramScore = scores[param][value] || 0;  // Safeguard if value not found
-    totalScore += paramScore * weight;
-    maxScore += weight; // Sum of weights for normalization
-  }
-
-  // Calculate percentage score
-  const percentageScore = (totalScore / maxScore) * 100;
-
-  // Return score as string formatted with percentage symbol
-  return `${percentageScore.toFixed(2)}%`; // Ensure string format
-};
 
 const Search = ({ setPincode }) => {
   const [farmers, setFarmers] = useState([]);
@@ -181,6 +107,7 @@ const Search = ({ setPincode }) => {
       setIsLoading(false);
     }
   };
+  
 
   const handleCall = (number) => {
     Linking.openURL(`tel:${number}`);
@@ -542,6 +469,84 @@ const ProduceListed = () => {
     setModalVisibleTwo(false);
     // setOrderAddress('');
   };
+  const calculateSustainabilityScore = (parameters) => {
+    // Define weights for each parameter
+    const weights = {
+      farmingMethod: 0.15,
+      irrigationMethod: 0.15,
+      fertilizerUse: 0.15,
+      pesticideUse: 0.15,
+      pesticideFrequency: 0.10,
+      pesticideType: 0.10,
+      farmEquipment: 0.10,
+      energySource: 0.10
+    };
+  
+    // Define scores for each parameter
+    const scores = {
+      farmingMethod: {
+        Organic: 1,
+        Conventional: 0.5,
+        Regenerative: 1,
+        Hydroponic: 0.75
+      },
+      irrigationMethod: {
+        'Drip Irrigation': 1,
+        'Flood Irrigation': 0.5,
+        'Rain-fed': 0.75
+      },
+      fertilizerUse: {
+        Organic: 1,
+        Synthetic: 0.5,
+        None: 1
+      },
+      pesticideUse: {
+        None: 1,
+        Organic: 0.75,
+        Synthetic: 0.5
+      },
+      pesticideFrequency: {
+        None: 1,
+        Monthly: 0.75,
+        Weekly: 0.5
+      },
+      pesticideType: {
+        NA: 1,
+        Low: 0.75,
+        Medium: 0.5,
+        High: 0.25
+      },
+      farmEquipment: {
+        Manual: 1,
+        Electric: 0.75,
+        Diesel: 0.5,
+        Biodiesel: 0.75
+      },
+      energySource: {
+        Renewable: 1,
+        'Non-renewable': 0.5
+      }
+    };
+  
+    // Calculate total score
+    let totalScore = 0;
+    let maxScore = 0;
+  
+    for (const [param, weight] of Object.entries(weights)) {
+      const value = parameters[param];
+      const paramScore = scores[param][value] || 0;  // Safeguard if value not found
+      totalScore += paramScore * weight;
+      maxScore += weight; // Sum of weights for normalization
+    }
+  
+    // Calculate percentage score
+    const percentageScore = (totalScore / maxScore) * 100;
+  
+    // Return score as string formatted with percentage symbol
+    return `${percentageScore.toFixed(2)}%`; // Ensure string format
+  };
+  
+
   return (
     <View style={styles.tabContent}>
       <Heading />
@@ -567,6 +572,21 @@ const ProduceListed = () => {
         <FlatList
           data={produce}
           renderItem={({ item }) => {
+            let sustainabilityScore = calculateSustainabilityScore({
+              farmingMethod: item.farmingMethod,
+              irrigationMethod: item.irrigationMethod,
+              fertilizerUse: item.fertilizerUse,
+              pesticideUse: item.pesticideUse,
+              pesticideFrequency: item.pesticideFrequency,
+              pesticideType: item.pesticideType,
+              farmEquipment: item.farmEquipment,
+              energySource: item.energySource
+            });
+          
+            const handleShowAIPrice = async () => {
+              await fetchAIRecommendedPrice(item.productName, item.quantityAvailable, item.id);
+            };
+          
             return (
               <Card containerStyle={styles.cardContainer}>
                 <View style={styles.productContainer}>
@@ -578,8 +598,9 @@ const ProduceListed = () => {
                   <Text style={styles.productText}>Name: {item.productName}</Text>
                   <Text style={styles.productText}>Quantity Available: {item.quantityAvailable}</Text>
                   <Text style={styles.productText}>Price: ₹{item.price}/KG</Text>
-                  <Text style={styles.productText}>Farmer Name: {item.displayName}</Text>
-                   <Button
+                 
+                  <Text style={[styles.productText, {color: 'red', fontSize: 18}]}>Sustainability Score: {sustainabilityScore}</Text>
+                  <Button
                     title="Order from Farmer"
                     onPress={() => handleOrder(item)}
                     buttonStyle={styles.callButton}
@@ -591,7 +612,7 @@ const ProduceListed = () => {
                   />
                   <Button
                     title="Make Price Offer"
-                    onPress={() => handleOffer()}
+                    onPress={() => handleOffer(item)}
                     buttonStyle={styles.callButton}
                   />
                 </View>

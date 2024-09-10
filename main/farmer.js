@@ -610,6 +610,9 @@ const styles = StyleSheet.create({
     height: 20,
     marginRight: 7,
   },
+  inputContainer: {
+    width: '370'
+  }
 });
 
 export default Farmer;

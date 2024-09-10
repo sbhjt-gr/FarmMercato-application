@@ -52,7 +52,7 @@ export default function HomeMain({ navigation, route }) {
             icon={() => <Icon name="adduser" size={18} color="#fff" />}
             onPress={() => { navigation.navigate('RegName', {type: 'consumer'}) }}
           >
-            Register as a Buyer
+            Register as a Consumer
           </Button>
         </View>
         <View style={styles.alreadyUser}>
